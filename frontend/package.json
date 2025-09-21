@@ -1,0 +1,55 @@
+{
+  "name": "@context-bridge/frontend",
+  "version": "1.0.0",
+  "description": "Frontend SDK for Context Bridge - enables agentic systems to fetch live page context and screenshots",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "context",
+    "bridge",
+    "agent",
+    "screenshot",
+    "dom",
+    "websocket",
+    "rest"
+  ],
+  "author": "Context Bridge Team",
+  "license": "MIT",
+  "dependencies": {
+    "html2canvas": "^1.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "rollup": "^3.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "typescript": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/context-bridge/context-bridge.git",
+    "directory": "frontend"
+  },
+  "bugs": {
+    "url": "https://github.com/context-bridge/context-bridge/issues"
+  },
+  "homepage": "https://github.com/context-bridge/context-bridge#readme"
+}

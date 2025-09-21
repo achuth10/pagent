@@ -1,0 +1,53 @@
+{
+  "name": "context-bridge",
+  "version": "1.0.0",
+  "description": "A unified library for web apps that enables agentic systems to fetch live page context and screenshots",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "examples/react-fastapi/frontend"
+  ],
+  "scripts": {
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && python setup.py sdist bdist_wheel",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd examples/react-fastapi/frontend && npm run dev",
+    "dev:backend": "cd examples/react-fastapi/backend && python main.py",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && pytest",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && flake8 src/",
+    "clean": "rm -rf frontend/dist backend/dist backend/build backend/*.egg-info",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -e .",
+    "example": "concurrently \"cd examples/react-fastapi/backend && python main.py\" \"cd examples/react-fastapi/frontend && npm run dev\""
+  },
+  "keywords": [
+    "context",
+    "bridge",
+    "agent",
+    "screenshot",
+    "dom",
+    "websocket",
+    "rest",
+    "automation",
+    "web-scraping",
+    "mcp",
+    "langchain"
+  ],
+  "author": "Context Bridge Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/context-bridge/context-bridge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/context-bridge/context-bridge/issues"
+  },
+  "homepage": "https://github.com/context-bridge/context-bridge#readme"
+}
