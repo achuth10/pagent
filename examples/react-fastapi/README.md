@@ -1,20 +1,29 @@
 # React + FastAPI Example
 
-This example demonstrates how to use the Context Bridge library with a React frontend and FastAPI backend.
+A comprehensive example showcasing the Context Bridge library with **bidirectional communication** between a React frontend and FastAPI backend. This demo includes real-time context extraction, intelligent backend analysis, and automatic instruction execution on the frontend.
 
-## Features Demonstrated
+> The backend analyzes page context using rule-based logic (placeholder for LLM integration) and sends intelligent instructions back to the frontend for automatic execution - creating a truly interactive web experience.
 
-- ✅ REST and WebSocket context providers
-- ✅ Real-time context extraction
-- ✅ **Real screenshot capture** using html2canvas (with whitelisting)
-- ✅ Form data extraction
-- ✅ Agent-facing API endpoints
-- ✅ Connection status monitoring
-- ✅ Automatic screenshot sending to backend
-- ✅ **🎯 Bidirectional Instruction System** - Backend analyzes context and sends intelligent instructions to frontend
-- ✅ **🧠 Intelligent Context Analysis** - AI-powered analysis of page content and user behavior
-- ✅ **⚡ Real-time Instruction Execution** - Frontend automatically executes backend instructions
-- ✅ **🎨 Visual Feedback** - Form highlighting, notifications, tooltips, and UI guidance
+## 🚀 Key Features
+
+### **Bidirectional Communication**
+
+- 🎯 **Smart Instruction System** - Backend analyzes page context and sends actionable instructions
+- ⚡ **Real-time Execution** - Frontend automatically executes backend instructions with visual feedback
+- 🧠 **Context Analysis** - Rule-based analysis (ready for LLM integration) of user behavior and page content
+
+### **Context Extraction**
+
+- 📄 **Comprehensive Context** - DOM structure, forms, viewport, metadata extraction
+- 📸 **Screenshot Capture** - Real screenshots using html2canvas with security whitelisting
+- 🔄 **Real-time Updates** - WebSocket-based live context monitoring
+
+### **Developer Experience**
+
+- 🔗 **Dual Providers** - REST and WebSocket context providers
+- 📊 **Connection Monitoring** - Real-time status indicators
+- 🛠️ **Agent-Ready APIs** - Backend endpoints designed for AI agent integration
+- 🎨 **Visual Feedback** - Form highlighting, notifications, tooltips, and UI guidance
 
 ## Architecture
 
