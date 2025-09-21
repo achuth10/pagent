@@ -1,16 +1,29 @@
 # Context Bridge
 
-A unified library for web apps that enables agentic systems to fetch live page context and optionally screenshots in a secure, opt-in, framework-agnostic way. The library is transport-agnostic, supporting both REST and WebSocket connections, allowing backend/agent code to use a single interface.
+A unified library that enables **bidirectional communication** between web applications and AI systems. Extract live page context, capture screenshots, and execute intelligent instructions - all in a secure, framework-agnostic way.
 
-## Features
+> **🎯 Key Innovation**: Beyond just context extraction, this library enables backends to analyze page context and send intelligent instructions back to the frontend for automatic execution, creating truly interactive AI-powered web experiences.
 
-- 🔒 **Secure & Opt-in**: Screenshots only on whitelisted pages with explicit configuration
-- 🌐 **Transport Agnostic**: Supports both REST and WebSocket protocols
-- 🎯 **Framework Agnostic**: Works with any frontend framework (React, Vue, Angular, vanilla JS)
-- 🤖 **Agent Ready**: Compatible with MCP, LangChain, LangGraph, and direct function calls
-- 📱 **Lightweight**: Minimal dependencies, production-ready
-- 🔄 **Real-time**: WebSocket support for live context updates
-- 📸 **Real Screenshots**: Uses html2canvas for actual page screenshots (not placeholders)
+## 🚀 Key Features
+
+### **Bidirectional Communication**
+
+- 🎯 **Smart Instruction System** - Backend analyzes context and sends actionable instructions to frontend
+- ⚡ **Real-time Execution** - Frontend automatically executes backend instructions with visual feedback
+- 🧠 **Context Analysis** - Built-in analysis engine (ready for LLM integration) for intelligent responses
+
+### **Context Extraction & Screenshots**
+
+- 📄 **Comprehensive Context** - DOM structure, forms, viewport, metadata extraction
+- 📸 **Real Screenshots** - Uses html2canvas for actual page screenshots (not placeholders)
+- 🔒 **Security First** - Screenshots only on whitelisted pages with explicit configuration
+
+### **Developer Experience**
+
+- 🌐 **Transport Agnostic** - Supports both REST and WebSocket protocols
+- 🎯 **Framework Agnostic** - Works with React, Vue, Angular, vanilla JS
+- 🤖 **Agent Ready** - Compatible with MCP, LangChain, LangGraph, and direct function calls
+- 📱 **Production Ready** - Lightweight, minimal dependencies, battle-tested
 
 ## Architecture
 
@@ -19,11 +32,26 @@ A unified library for web apps that enables agentic systems to fetch live page c
 │   Frontend      │    │   Backend       │    │   Agent/AI      │
 │   (Browser)     │◄──►│   (Server)      │◄──►│   System        │
 │                 │    │                 │    │                 │
-│ ContextProvider │    │ ContextProvider │    │ MCP/LangChain   │
-│ - REST          │    │ - REST          │    │ - get_context() │
-│ - WebSocket     │    │ - WebSocket     │    │ - get_screenshot│
+│ ContextProvider │    │ Context         │    │ MCP/LangChain   │
+│ - REST          │    │ Analyzer        │    │ - get_context() │
+│ - WebSocket     │    │                 │    │ - get_screenshot│
+│                 │    │ Instruction     │    │ - send_instruction│
+│ Instruction     │    │ Generator       │    │                 │
+│ Executor        │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+         ▲                       │                       ▲
+         │      Instructions     │                       │
+         └───────────────────────┘                       │
+                                                         │
+              Context & Screenshots ─────────────────────┘
 ```
+
+### Bidirectional Flow
+
+1. **Frontend → Backend**: Page context (DOM, forms, viewport, metadata)
+2. **Backend Analysis**: Context analyzer processes page data (ready for LLM integration)
+3. **Backend → Frontend**: Intelligent instructions (form assistance, notifications, UI guidance)
+4. **Frontend Execution**: Instruction executor automatically applies changes with visual feedback
 
 ## Quick Start
 
@@ -105,19 +133,23 @@ context-bridge/
 ├── frontend/           # Frontend SDK (JS/TS)
 │   ├── src/
 │   │   ├── providers/  # REST & WebSocket providers
-│   │   ├── utils/      # Context extraction utilities
+│   │   ├── utils/      # Context extraction & instruction execution
 │   │   └── interfaces/ # TypeScript interfaces
 │   └── package.json
 ├── backend/            # Backend SDK (Python)
 │   ├── src/context_bridge/
-│   │   ├── providers/  # REST & WebSocket providers
-│   │   ├── interfaces/ # Abstract interfaces
-│   │   └── types.py    # Type definitions
+│   │   ├── providers/        # REST & WebSocket providers
+│   │   ├── context_analyzer.py  # Context analysis engine
+│   │   ├── interfaces/       # Abstract interfaces
+│   │   └── types.py         # Type definitions
 │   └── setup.py
 ├── core/               # Shared type definitions
-│   └── types.ts
+│   └── types.ts        # Includes instruction types
 └── examples/           # Example implementations
-    └── react-fastapi/  # React + FastAPI example
+    └── react-fastapi/  # React + FastAPI with bidirectional instructions
+        ├── frontend/   # React app with instruction executor
+        ├── backend/    # FastAPI with context analyzer
+        └── README.md   # Detailed setup & testing guide
 ```
 
 ## Frontend SDK
@@ -149,20 +181,34 @@ const screenshot = await provider.getScreenshot();
 const response = await provider.getContextWithScreenshot();
 ```
 
-### WebSocket Provider
+### WebSocket Provider with Instructions
 
 ```typescript
 import { WSContextProvider } from "@context-bridge/frontend";
 
-const provider = new WSContextProvider({
-  baseUrl: "ws://localhost:8000",
-  enableScreenshots: true,
-  whitelistedPages: ["localhost"],
-});
+const provider = new WSContextProvider(
+  {
+    baseUrl: "ws://localhost:8000",
+    enableScreenshots: true,
+    whitelistedPages: ["localhost"],
+  },
+  {
+    // Instruction executor configuration
+    enableNotifications: true,
+    enableFormManipulation: true,
+    enableDOMManipulation: true,
+  }
+);
 
 // Subscribe to real-time context changes
 const unsubscribe = provider.onContextChange((context) => {
   console.log("Context changed:", context);
+});
+
+// Subscribe to incoming instructions from backend
+const unsubscribeInstructions = provider.onInstruction((instruction) => {
+  console.log("Received instruction:", instruction.type);
+  // Instructions are automatically executed by the instruction executor
 });
 
 // Start monitoring
@@ -171,6 +217,7 @@ provider.startMonitoring();
 // Stop monitoring
 provider.stopMonitoring();
 unsubscribe();
+unsubscribeInstructions();
 ```
 
 ## Backend SDK
@@ -226,6 +273,96 @@ async def capture_page_screenshot(url: str, options: dict = None) -> str:
         whitelisted_pages=["localhost", "myapp.com"]
     )
     return screenshot
+```
+
+## 🎯 Bidirectional Instruction System
+
+### Backend Context Analysis
+
+```python
+from context_bridge.context_analyzer import ContextAnalyzer
+
+# Initialize analyzer (uses rule-based logic - ready for LLM integration)
+analyzer = ContextAnalyzer()
+
+# Analyze page context
+analysis = analyzer.analyze_context(page_context)
+print(f"Page type: {analysis.pageType}")
+print(f"User intent: {analysis.userIntent}")
+print(f"Issues found: {len(analysis.issues)}")
+
+# Generate intelligent instructions
+instructions = analyzer.generate_instructions(page_context, analysis)
+print(f"Generated {len(instructions)} instructions")
+```
+
+### Instruction Types
+
+The system supports various instruction types for different scenarios:
+
+```python
+# Form assistance - highlight required fields, show validation errors
+{
+    "type": "form_assistance",
+    "data": {
+        "action": "highlight_field",
+        "selector": "#email",
+        "message": "Email field is required"
+    }
+}
+
+# Contextual notifications - show helpful messages
+{
+    "type": "contextual_notification",
+    "data": {
+        "message": "Complete 3 required fields to continue",
+        "notificationType": "info"
+    }
+}
+
+# Element interactions - scroll, highlight, click
+{
+    "type": "scroll_to_element",
+    "data": {
+        "selector": "#submit-button",
+        "behavior": "smooth"
+    }
+}
+```
+
+### LLM Integration Ready
+
+Replace the demo analyzer with your LLM integration:
+
+```python
+import openai
+
+class LLMContextAnalyzer:
+    def __init__(self, api_key: str):
+        self.client = openai.OpenAI(api_key=api_key)
+
+    async def analyze_context(self, context: PageContext) -> ContextAnalysis:
+        prompt = f"""
+        Analyze this web page context and provide insights:
+        URL: {context.url}
+        Title: {context.title}
+        Forms: {len(context.dom.forms)} forms found
+        Text: {context.dom.text[:1000]}...
+
+        Return JSON with:
+        - pageType: form|checkout|dashboard|content|error
+        - userIntent: browsing|form_filling|purchasing|searching
+        - issues: validation, usability, accessibility problems
+        - suggestions: improvements and next steps
+        """
+
+        response = await self.client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
+        )
+
+        return self.parse_llm_response(response.choices[0].message.content)
 ```
 
 ## Page Context Structure
@@ -306,7 +443,9 @@ const provider = new RESTContextProvider({
 });
 ```
 
-## Running the Example
+## 🚀 Running the Example
+
+Experience the full bidirectional instruction system with the React + FastAPI example:
 
 ### Backend (FastAPI)
 
@@ -316,7 +455,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-The API will be available at `http://localhost:8000`
+The API will be available at `http://localhost:8000` with context analysis and instruction generation.
 
 ### Frontend (React)
 
@@ -326,15 +465,28 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+The app will be available at `http://localhost:3000` with automatic instruction execution.
 
-### Example Endpoints
+### 🎯 Testing the Instruction System
+
+1. **Open** `http://localhost:3000` in your browser
+2. **Select** "WebSocket Provider" for real-time communication
+3. **Leave required form fields empty** (Name, Email, Message)
+4. **Click** "📤 Send Context to Backend"
+5. **Watch the magic**:
+   - Backend analyzes your page context
+   - Generates intelligent instructions
+   - Frontend automatically executes them
+   - Form fields get highlighted in orange
+   - Helpful notifications appear
+
+### API Endpoints
 
 - `GET /current-context` - Get current page context
 - `POST /screenshot` - Capture page screenshot
 - `GET /agent/context` - Agent endpoint for context
 - `GET /agent/screenshot` - Agent endpoint for screenshot
-- `WS /ws` - WebSocket endpoint for real-time updates
+- `WS /ws` - **WebSocket endpoint for bidirectional communication**
 
 ## API Reference
 
@@ -506,6 +658,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- GitHub Issues: [https://github.com/context-bridge/context-bridge/issues](https://github.com/context-bridge/context-bridge/issues)
-- Documentation: [https://github.com/context-bridge/context-bridge#readme](https://github.com/context-bridge/context-bridge#readme)
+- GitHub Issues: [https://github.com/achuth10/pagent/context-bridge/issues](https://github.com/achuth10/pagent/context-bridge/issues)
+- Documentation: [https://github.com/achuth10/pagent/context-bridge#readme](https://github.com/achuth10/pagent/context-bridge#readme)
 - Examples: [examples/](examples/)
