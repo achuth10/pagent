@@ -2,7 +2,7 @@
 
 A unified library that enables **bidirectional communication** between web applications and AI systems. Extract live page context, capture screenshots, and execute intelligent instructions - all in a secure, framework-agnostic way.
 
-> **🎯 Key Innovation**: Beyond just context extraction, this library enables backends to analyze page context and send intelligent instructions back to the frontend for automatic execution, creating truly interactive AI-powered web experiences.
+> Beyond just context extraction, this library enables backends to analyze page context and send intelligent instructions back to the frontend for automatic execution, creating truly interactive AI-powered web experiences.
 
 ## 🚀 Key Features
 
