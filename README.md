@@ -447,6 +447,8 @@ const provider = new RESTContextProvider({
 
 Experience the full bidirectional instruction system with the React + FastAPI example:
 
+<img width="1180" height="830" alt="Screenshot 2025-09-21 at 19 20 35" src="https://github.com/user-attachments/assets/e85adbe8-4648-4dd3-b8d8-7aaff5b91184" />
+
 ### Backend (FastAPI)
 
 ```bash
