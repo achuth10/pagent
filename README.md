@@ -46,7 +46,13 @@ import { RESTContextProvider } from "@context-bridge/frontend";
 const provider = new RESTContextProvider({
   baseUrl: "http://localhost:8000",
   enableScreenshots: true,
-  whitelistedPages: ["localhost", "myapp.com"],
+  whitelistedPages: [
+    "/", // Home page
+    "/dashboard", // Exact path match
+    "/admin/*", // Wildcard for all admin pages
+    "/user/\\d+", // Regex pattern for user profiles
+    "#settings", // Hash/fragment match
+  ],
 });
 
 // Get current page context

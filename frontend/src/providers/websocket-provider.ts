@@ -141,10 +141,54 @@ export class WSContextProvider implements EventContextProvider {
       this.config.whitelistedPages.length > 0
     ) {
       const currentUrl = window.location.href;
+      const currentPath = window.location.pathname;
+      const currentHash = window.location.hash;
+
       return this.config.whitelistedPages.some((pattern) => {
-        return (
-          currentUrl.includes(pattern) || new RegExp(pattern).test(currentUrl)
-        );
+        // Support different pattern types:
+        // 1. Exact path match: "/dashboard"
+        // 2. Path prefix: "/admin/*"
+        // 3. Regex pattern: "^/user/\\d+$"
+        // 4. Full URL pattern: "http://localhost:3000/settings"
+        // 5. Hash/fragment: "#settings"
+
+        try {
+          // If pattern starts with # (hash/fragment)
+          if (pattern.startsWith("#")) {
+            return currentHash === pattern || currentHash.startsWith(pattern);
+          }
+
+          // If pattern starts with http (full URL)
+          if (pattern.startsWith("http")) {
+            return (
+              currentUrl.includes(pattern) ||
+              new RegExp(pattern).test(currentUrl)
+            );
+          }
+
+          // If pattern contains * (wildcard)
+          if (pattern.includes("*")) {
+            const regexPattern = pattern
+              .replace(/\*/g, ".*")
+              .replace(/\?/g, "\\?");
+            return new RegExp(`^${regexPattern}$`).test(currentPath);
+          }
+
+          // If pattern looks like regex (starts with ^ or contains regex chars)
+          if (
+            pattern.startsWith("^") ||
+            pattern.includes("\\d") ||
+            pattern.includes("\\w")
+          ) {
+            return new RegExp(pattern).test(currentPath);
+          }
+
+          // Default: exact path match or path prefix
+          return currentPath === pattern || currentPath.startsWith(pattern);
+        } catch (error) {
+          console.warn(`Invalid whitelist pattern: ${pattern}`, error);
+          return false;
+        }
       });
     }
 

@@ -30,7 +30,12 @@ function App() {
     const restConfig = {
       baseUrl: 'http://localhost:8000',
       enableScreenshots: true,
-      whitelistedPages: ['localhost', '127.0.0.1'],
+      whitelistedPages: [
+        '/',           // Home page
+        '/dashboard',  // Dashboard page
+        '/settings/*', // All settings pages
+        '#demo'        // Demo section (hash)
+      ],
       screenshotOptions: {
         format: 'png' as const,
         quality: 0.8,
@@ -41,7 +46,12 @@ function App() {
     const wsConfig = {
       baseUrl: 'http://localhost:8000',
       enableScreenshots: true,
-      whitelistedPages: ['localhost', '127.0.0.1'],
+      whitelistedPages: [
+        '/',           // Home page
+        '/dashboard',  // Dashboard page
+        '/settings/*', // All settings pages
+        '#demo'        // Demo section (hash)
+      ],
       screenshotOptions: {
         format: 'png' as const,
         quality: 0.8,

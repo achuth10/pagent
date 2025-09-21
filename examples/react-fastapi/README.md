@@ -120,7 +120,7 @@ The WebSocket provider enables:
 ### Security Features
 
 - Sensitive data filtering (passwords, hidden fields)
-- Page whitelisting for screenshots
+- **Page-level whitelisting** for screenshots (specific routes, not domains)
 - Optional authentication headers
 - Sanitized HTML extraction
 
@@ -184,12 +184,45 @@ const customMetadata = {
 };
 ```
 
+### Page Whitelisting Patterns
+
+The library supports flexible page whitelisting patterns:
+
+```typescript
+whitelistedPages: [
+  "/", // Exact path: only root page
+  "/dashboard", // Exact path: only /dashboard
+  "/admin/*", // Wildcard: all pages under /admin/
+  "/user/\\d+", // Regex: user pages like /user/123
+  "^/api/v\\d+/docs$", // Complex regex: API docs pages
+  "#settings", // Hash fragment: #settings section
+  "http://localhost:3000/special", // Full URL match
+];
+```
+
+**Pattern Types:**
+
+- **Exact match**: `/dashboard` matches only `/dashboard`
+- **Prefix match**: `/admin` matches `/admin`, `/admin/users`, etc.
+- **Wildcard**: `/admin/*` matches `/admin/anything`
+- **Regex**: `^/user/\\d+$` matches `/user/123` but not `/user/abc`
+- **Hash**: `#settings` matches when URL contains `#settings`
+- **Full URL**: Complete URL matching for cross-origin scenarios
+
 ### Custom Screenshot Options
 
 Configure real screenshot capture options (html2canvas):
 
 ```typescript
 const provider = new RESTContextProvider({
+  enableScreenshots: true,
+  whitelistedPages: [
+    "/", // Home page only
+    "/dashboard", // Exact dashboard page
+    "/admin/*", // All admin pages
+    "/user/\\d+", // User profile pages (regex)
+    "#settings", // Settings section (hash)
+  ],
   screenshotOptions: {
     format: "png", // or "jpeg"
     quality: 0.8, // 0.1 to 1.0
