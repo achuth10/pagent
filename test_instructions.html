@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Instructions - Context Bridge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .card {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        form {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #444;
+            color: white;
+        }
+        button {
+            background: #646cff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            background: #535bf2;
+        }
+        .required {
+            color: #ff6b6b;
+        }
+        .debug {
+            background: #1a2332;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .instruction {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Context Bridge Instructions Test</h1>
+    
+    <div class="card">
+        <h2>WebSocket Connection</h2>
+        <p>Status: <span id="ws-status">Connecting...</span></p>
+        <p>Instructions Received: <span id="instruction-count">0</span></p>
+        <button onclick="sendContext()">Send Context to Backend</button>
+        <button onclick="clearInstructions()">Clear Instructions</button>
+    </div>
+
+    <div class="card">
+        <h2>Test Form (with Required Fields)</h2>
+        <p>Fill out this form to trigger backend instructions. Leave required fields empty to see validation instructions.</p>
+        
+        <form id="test-form">
+            <label for="name">Name <span class="required">*</span></label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+            
+            <label for="email">Email <span class="required">*</span></label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" placeholder="Enter your phone number">
+            
+            <label for="message">Message <span class="required">*</span></label>
+            <textarea id="message" name="message" rows="4" placeholder="Enter your message" required></textarea>
+            
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="">Select a category</option>
+                <option value="general">General</option>
+                <option value="support">Support</option>
+                <option value="feedback">Feedback</option>
+            </select>
+            
+            <label>
+                <input type="checkbox" name="newsletter"> Subscribe to newsletter
+            </label>
+            
+            <label>
+                <input type="checkbox" name="terms" required> I agree to the terms <span class="required">*</span>
+            </label>
+            
+            <button type="submit">Submit Form</button>
+            <button type="reset">Reset Form</button>
+        </form>
+    </div>
+
+    <div class="debug" id="debug-section">
+        <h3>🔍 Debug Information</h3>
+        <div id="debug-log"></div>
+    </div>
+
+    <div class="card" id="instructions-section" style="display: none;">
+        <h3>📨 Instructions from Backend</h3>
+        <div id="instructions-list"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let instructionCount = 0;
+        let instructions = [];
+
+        function log(message) {
+            const debugLog = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket('ws://localhost:8000/ws');
+                
+                ws.onopen = function() {
+                    document.getElementById('ws-status').textContent = 'Connected ✅';
+                    document.getElementById('ws-status').style.color = '#22c55e';
+                    log('✅ WebSocket connected');
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+                        log(`📨 Received message: ${message.type}`);
+                        
+                        if (message.type === 'instruction') {
+                            handleInstruction(message.data);
+                        } else {
+                            log(`📄 Message data: ${JSON.stringify(message, null, 2)}`);
+                        }
+                    } catch (error) {
+                        log(`❌ Error parsing message: ${error.message}`);
+                    }
+                };
+                
+                ws.onclose = function() {
+                    document.getElementById('ws-status').textContent = 'Disconnected ❌';
+                    document.getElementById('ws-status').style.color = '#ef4444';
+                    log('❌ WebSocket disconnected');
+                };
+                
+                ws.onerror = function(error) {
+                    log(`❌ WebSocket error: ${error}`);
+                };
+                
+            } catch (error) {
+                log(`❌ Failed to connect WebSocket: ${error.message}`);
+            }
+        }
+
+        function handleInstruction(instruction) {
+            instructionCount++;
+            instructions.push(instruction);
+            
+            document.getElementById('instruction-count').textContent = instructionCount;
+            document.getElementById('instructions-section').style.display = 'block';
+            
+            log(`🎯 Received instruction: ${instruction.type}`);
+            
+            // Display the instruction
+            const instructionsList = document.getElementById('instructions-list');
+            const instructionDiv = document.createElement('div');
+            instructionDiv.className = 'instruction';
+            instructionDiv.innerHTML = `
+                <strong>${instruction.type}</strong> (Priority: ${instruction.priority || 'medium'})<br>
+                ${JSON.stringify(instruction.data, null, 2)}
+            `;
+            instructionsList.appendChild(instructionDiv);
+            
+            // Execute the instruction (basic implementation)
+            executeInstruction(instruction);
+        }
+
+        function executeInstruction(instruction) {
+            try {
+                if (instruction.type === 'form_assistance') {
+                    const data = instruction.data;
+                    const element = document.querySelector(data.selector);
+                    
+                    if (element) {
+                        if (data.action === 'highlight_field') {
+                            element.style.border = '2px solid #ff9800';
+                            element.style.backgroundColor = 'rgba(255, 152, 0, 0.1)';
+                            log(`🔶 Highlighted field: ${data.selector}`);
+                        }
+                    } else {
+                        log(`⚠️ Element not found: ${data.selector}`);
+                    }
+                } else if (instruction.type === 'contextual_notification') {
+                    const data = instruction.data;
+                    alert(`📢 ${data.notificationType.toUpperCase()}: ${data.message}`);
+                    log(`📢 Showed notification: ${data.message}`);
+                }
+            } catch (error) {
+                log(`❌ Error executing instruction: ${error.message}`);
+            }
+        }
+
+        function sendContext() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket not connected');
+                return;
+            }
+
+            // Extract context from the page
+            const context = {
+                url: window.location.href,
+                title: document.title,
+                timestamp: Date.now(),
+                dom: {
+                    text: document.body.innerText,
+                    forms: [{
+                        id: 'test-form',
+                        name: 'test-form',
+                        action: '',
+                        method: 'POST',
+                        fields: [
+                            {
+                                id: 'name',
+                                name: 'name',
+                                type: 'text',
+                                value: document.getElementById('name').value,
+                                placeholder: 'Enter your name',
+                                required: true
+                            },
+                            {
+                                id: 'email',
+                                name: 'email',
+                                type: 'email',
+                                value: document.getElementById('email').value,
+                                placeholder: 'Enter your email',
+                                required: true
+                            },
+                            {
+                                id: 'message',
+                                name: 'message',
+                                type: 'textarea',
+                                value: document.getElementById('message').value,
+                                placeholder: 'Enter your message',
+                                required: true
+                            }
+                        ]
+                    }],
+                    inputs: [
+                        {
+                            id: 'name',
+                            name: 'name',
+                            type: 'text',
+                            value: document.getElementById('name').value,
+                            required: true
+                        },
+                        {
+                            id: 'email',
+                            name: 'email',
+                            type: 'email',
+                            value: document.getElementById('email').value,
+                            required: true
+                        },
+                        {
+                            id: 'message',
+                            name: 'message',
+                            type: 'textarea',
+                            value: document.getElementById('message').value,
+                            required: true
+                        }
+                    ]
+                },
+                viewport: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    scrollX: window.scrollX,
+                    scrollY: window.scrollY
+                },
+                metadata: {}
+            };
+
+            const message = {
+                type: 'context',
+                data: context,
+                timestamp: Date.now()
+            };
+
+            ws.send(JSON.stringify(message));
+            log(`📤 Sent context to backend`);
+            log(`📄 Context data: ${JSON.stringify(context, null, 2)}`);
+        }
+
+        function clearInstructions() {
+            instructionCount = 0;
+            instructions = [];
+            document.getElementById('instruction-count').textContent = '0';
+            document.getElementById('instructions-list').innerHTML = '';
+            document.getElementById('instructions-section').style.display = 'none';
+            
+            // Remove highlights
+            document.querySelectorAll('input, textarea').forEach(el => {
+                el.style.border = '';
+                el.style.backgroundColor = '';
+            });
+            
+            log('🧹 Cleared all instructions and highlights');
+        }
+
+        // Auto-send context when form changes
+        document.getElementById('test-form').addEventListener('input', function() {
+            setTimeout(sendContext, 500); // Debounce
+        });
+
+        // Connect on page load
+        window.onload = function() {
+            log('🚀 Starting Context Bridge test...');
+            connectWebSocket();
+            
+            // Send initial context after connection
+            setTimeout(sendContext, 2000);
+        };
+    </script>
+</body>
+</html>

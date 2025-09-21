@@ -11,6 +11,10 @@ This example demonstrates how to use the Context Bridge library with a React fro
 - ✅ Agent-facing API endpoints
 - ✅ Connection status monitoring
 - ✅ Automatic screenshot sending to backend
+- ✅ **🎯 Bidirectional Instruction System** - Backend analyzes context and sends intelligent instructions to frontend
+- ✅ **🧠 Intelligent Context Analysis** - AI-powered analysis of page content and user behavior
+- ✅ **⚡ Real-time Instruction Execution** - Frontend automatically executes backend instructions
+- ✅ **🎨 Visual Feedback** - Form highlighting, notifications, tooltips, and UI guidance
 
 ## Architecture
 
@@ -19,11 +23,24 @@ This example demonstrates how to use the Context Bridge library with a React fro
 │   React App     │◄──────────────►│   FastAPI       │
 │   (Port 3000)   │                │   (Port 8000)   │
 │                 │                │                 │
-│ ContextProvider │                │ Agent Endpoints │
-│ - REST          │                │ - /agent/*      │
-│ - WebSocket     │                │ - /current-*    │
+│ ContextProvider │   Context      │ Context         │
+│ - REST          │──────────────► │ Analyzer        │
+│ - WebSocket     │                │                 │
+│                 │ Instructions   │ Instruction     │
+│ Instruction     │◄────────────── │ Generator       │
+│ Executor        │                │                 │
+│                 │                │ Agent Endpoints │
+│                 │                │ - /agent/*      │
+│                 │                │ - /current-*    │
 └─────────────────┘                └─────────────────┘
 ```
+
+### Bidirectional Flow
+
+1. **Frontend → Backend**: Page context (DOM, forms, viewport, etc.)
+2. **Backend Analysis**: AI-powered context analysis and issue detection
+3. **Backend → Frontend**: Intelligent instructions (highlights, notifications, guidance)
+4. **Frontend Execution**: Automatic instruction execution with visual feedback
 
 ## Quick Start
 
@@ -50,6 +67,16 @@ The React app will start on `http://localhost:3000`
 ### 3. Open the Example
 
 Navigate to `http://localhost:3000` in your browser to see the Context Bridge in action.
+
+### 4. Test the Instruction System
+
+1. Make sure "WebSocket Provider" is selected in the React app
+2. Leave required form fields empty (Name, Email, Message)
+3. Click "📤 Send Context to Backend"
+4. Watch as the backend analyzes your context and sends intelligent instructions:
+   - Form fields get highlighted in orange
+   - Notifications appear with guidance
+   - Instructions are listed in the "🎯 Instructions from Backend" section
 
 ## API Endpoints
 
@@ -87,6 +114,187 @@ async def get_page_info():
             data = await resp.json()
             screenshot = data['screenshot']  # Base64 PNG data
             print(f"Screenshot size: {len(screenshot)} chars (~{len(screenshot)//1024}KB)")
+```
+
+## 🎯 Bidirectional Instruction System
+
+This example showcases a powerful bidirectional communication system where the backend can analyze page context and send intelligent instructions back to the frontend for automatic execution.
+
+### How It Works
+
+1. **Context Analysis**: Backend analyzes page context using rule-based logic (placeholder for LLM integration)
+2. **Issue Detection**: Identifies validation errors, usability issues, and accessibility problems
+3. **Instruction Generation**: Creates specific instructions based on analysis results
+4. **Real-time Delivery**: Sends instructions via WebSocket for immediate execution
+5. **Automatic Execution**: Frontend executes instructions with visual feedback
+
+### Instruction Types Supported
+
+#### 🔧 Form Assistance
+
+- **Highlight Required Fields**: Visually emphasize empty required form fields
+- **Show Validation Errors**: Display specific error messages for invalid inputs
+- **Suggest Values**: Provide placeholder suggestions for form fields
+- **Field Validation**: Real-time validation feedback
+
+#### 📢 Contextual Notifications
+
+- **Info Messages**: Helpful guidance and next steps
+- **Warning Alerts**: Important notices about potential issues
+- **Error Notifications**: Critical error messages with suggested actions
+- **Success Confirmations**: Positive feedback for completed actions
+
+#### 🎨 Content Instructions
+
+- **Tooltips**: Show helpful information next to specific elements
+- **Overlays**: Display important information over page content
+- **Section Highlighting**: Emphasize important page sections
+- **Content Modification**: Dynamic content updates based on context
+
+#### 🧭 Navigation Suggestions
+
+- **Next Steps**: Recommend logical next actions for users
+- **Alternative Paths**: Suggest different approaches or options
+- **Navigation Warnings**: Alert about potentially problematic navigation
+
+#### 🎯 Element Interactions
+
+- **Scroll to Element**: Automatically scroll to important page elements
+- **Highlight Elements**: Visually emphasize specific page components
+- **Click Simulation**: Programmatically interact with page elements
+
+### Context Analysis Features
+
+⚠️ **Note**: The current context analyzer implementation uses rule-based logic as a demonstration. In a production system, this would be replaced with LLM-powered analysis for more sophisticated understanding of page context and user intent.
+
+The backend performs analysis of page context using:
+
+#### Page Type Detection
+
+- **Form Pages**: Detects forms and analyzes field requirements
+- **Checkout Pages**: Identifies e-commerce checkout flows
+- **Dashboard Pages**: Recognizes admin and user dashboard interfaces
+- **Content Pages**: Analyzes general content and reading experiences
+- **Error Pages**: Detects error states and provides recovery suggestions
+
+#### Issue Identification
+
+- **Validation Issues**: Empty required fields, invalid formats
+- **Usability Problems**: Poor mobile experience, accessibility concerns
+- **Performance Issues**: Large content, slow loading indicators
+- **Accessibility Gaps**: Missing labels, poor contrast, navigation issues
+
+#### User Intent Inference
+
+- **Form Filling**: User attempting to complete forms
+- **Purchasing**: User in checkout or buying process
+- **Browsing**: User exploring content or navigation
+- **Searching**: User looking for specific information
+
+### Example Instruction Flow
+
+```javascript
+// 1. Frontend sends context via WebSocket
+const context = {
+  url: "http://localhost:3000",
+  title: "Contact Form",
+  dom: {
+    forms: [
+      {
+        id: "contact-form",
+        fields: [
+          { id: "name", required: true, value: "" }, // Empty required field
+          { id: "email", required: true, value: "" }, // Empty required field
+          { id: "message", required: true, value: "" }, // Empty required field
+        ],
+      },
+    ],
+  },
+};
+
+// 2. Backend analyzes context and generates instructions
+const instructions = [
+  {
+    type: "form_assistance",
+    data: {
+      action: "highlight_field",
+      selector: "#name",
+      message: "This field is required: name",
+    },
+  },
+  {
+    type: "contextual_notification",
+    data: {
+      message: "Please complete 3 required fields to continue",
+      notificationType: "info",
+    },
+  },
+];
+
+// 3. Frontend receives and executes instructions automatically
+// - Form fields get highlighted in orange
+// - Notification appears at top of page
+// - User gets clear guidance on what to do next
+```
+
+### Testing the Instruction System
+
+#### Using the React App
+
+1. Start both backend and frontend servers
+2. Navigate to `http://localhost:3000`
+3. Ensure "WebSocket Provider" is selected
+4. Leave required form fields empty (Name, Email, Message)
+5. Click "📤 Send Context to Backend"
+6. Observe:
+   - Form fields get highlighted
+   - Instructions appear in the "🎯 Instructions from Backend" section
+   - Notifications show at the top of the page
+
+#### Using the Test Page
+
+A standalone test page (`test_instructions.html`) is included for debugging:
+
+1. Open `test_instructions.html` in your browser
+2. Check WebSocket connection status
+3. Interact with the form to trigger instructions
+4. View debug logs to see the instruction flow
+
+### Configuration Options
+
+#### Frontend Configuration
+
+```typescript
+const wsProvider = new WSContextProvider(config, {
+  enableNotifications: true, // Enable notification instructions
+  enableRedirects: true, // Enable navigation instructions
+  enableFormManipulation: true, // Enable form assistance
+  enableDOMManipulation: true, // Enable element interactions
+});
+```
+
+#### Backend Configuration
+
+The context analyzer can be customized for different analysis strategies:
+
+- Form validation rules
+- Page type detection patterns
+- Issue severity thresholds
+- Instruction generation policies
+
+⚠️ **LLM Integration**: Replace the current rule-based `ContextAnalyzer` with LLM-powered analysis:
+
+```python
+# Example LLM integration placeholder
+class LLMContextAnalyzer:
+    def __init__(self, llm_client):
+        self.llm_client = llm_client
+
+    async def analyze_context(self, context: PageContext) -> ContextAnalysis:
+        # Send context to LLM for analysis
+        prompt = f"Analyze this web page context: {context}"
+        analysis = await self.llm_client.analyze(prompt)
+        return self.parse_llm_response(analysis)
 ```
 
 ## Features in the Example
@@ -313,10 +521,196 @@ If real screenshots aren't working:
 4. Verify `enableScreenshots` is set to `true`
 5. Ensure the page doesn't have security restrictions
 
+### 🎯 Instruction System Issues
+
+If instructions are not showing up or working:
+
+#### Backend Issues
+
+1. **Backend Not Starting**:
+
+   - Error: `WARNING: You must pass the application as an import string to enable 'reload' or 'workers'.`
+   - Solution: Use `uvicorn.run("main:app", ...)` instead of `uvicorn.run(app, ...)`
+
+2. **No Instructions Generated**:
+
+   - Check backend logs for "Generated X instructions" messages
+   - Ensure form has empty required fields to trigger validation
+   - Verify context analyzer is receiving proper form data
+
+3. **Context Analysis Failing**:
+   - Check backend logs for analysis errors
+   - Verify Python types are properly imported
+   - Ensure context conversion is working correctly
+
+#### Frontend Issues
+
+1. **WebSocket Not Connected**:
+
+   - Check browser console for WebSocket connection errors
+   - Verify backend is running on port 8000
+   - Ensure WebSocket provider is selected (not REST)
+
+2. **Instructions Not Received**:
+
+   - Check browser console for "📨 Received instruction in App:" messages
+   - Verify `onInstruction` callback is working
+   - Check Network tab for WebSocket messages
+
+3. **Instructions Not Displayed**:
+
+   - Look for "🎯 Instructions from Backend" section
+   - Instructions only show when `receivedInstructions.length > 0`
+   - Check if instructions are being added to state
+
+4. **Instructions Not Executed**:
+   - Verify instruction executor is initialized
+   - Check if instruction types are enabled in configuration
+   - Look for CSS classes being applied to elements
+
+#### Debug Steps
+
+1. **Test with Standalone Page**: Use `test_instructions.html` to isolate issues
+2. **Check Browser Console**: Look for JavaScript errors and WebSocket messages
+3. **Check Backend Logs**: Verify context analysis and instruction generation
+4. **Verify Configuration**: Ensure WebSocket provider and instructions are enabled
+
+#### Expected Flow Verification
+
+```bash
+# 1. Backend should show these logs:
+📥 Received context: [Page Title] at [URL]
+📊 Context analysis: form (confidence: 1.00)
+🎯 Generated 7 instructions
+
+# 2. Frontend console should show:
+📨 Received instruction in App: {type: "form_assistance", ...}
+
+# 3. UI should show:
+- Orange highlighted form fields
+- "🎯 Instructions from Backend" section with instruction list
+- Notifications at top of page
+```
+
+#### Quick Test
+
+```javascript
+// Test WebSocket connection in browser console:
+const ws = new WebSocket("ws://localhost:8000/ws");
+ws.onopen = () => console.log("✅ Connected");
+ws.onmessage = (e) => console.log("📨 Message:", JSON.parse(e.data));
+```
+
+## Production Deployment & LLM Integration
+
+### 🤖 Replacing the Demo Context Analyzer
+
+The current `ContextAnalyzer` uses simple rule-based logic for demonstration. For production use, replace it with LLM-powered analysis:
+
+#### Option 1: OpenAI Integration
+
+```python
+import openai
+from context_bridge.types import PageContext, ContextAnalysis
+
+class OpenAIContextAnalyzer:
+    def __init__(self, api_key: str):
+        self.client = openai.OpenAI(api_key=api_key)
+
+    async def analyze_context(self, context: PageContext) -> ContextAnalysis:
+        prompt = f"""
+        Analyze this web page context and provide structured analysis:
+
+        URL: {context.url}
+        Title: {context.title}
+        Page Text: {context.dom.text[:1000]}...
+        Forms: {len(context.dom.forms)} forms found
+        Form Fields: {[f.id for form in context.dom.forms for f in form.fields]}
+
+        Please analyze and return JSON with:
+        1. pageType: form|checkout|dashboard|content|error|loading|unknown
+        2. userIntent: browsing|purchasing|form_filling|searching|reading
+        3. issues: array of {type, severity, message, element}
+        4. suggestions: array of {type, message, action}
+        5. confidence: 0-1 score
+        """
+
+        response = await self.client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
+        )
+
+        return self.parse_llm_response(response.choices[0].message.content)
+```
+
+#### Option 2: Anthropic Claude Integration
+
+```python
+import anthropic
+
+class ClaudeContextAnalyzer:
+    def __init__(self, api_key: str):
+        self.client = anthropic.Anthropic(api_key=api_key)
+
+    async def analyze_context(self, context: PageContext) -> ContextAnalysis:
+        # Similar implementation using Claude API
+        pass
+```
+
+#### Option 3: Local LLM Integration
+
+```python
+# Using Ollama, LM Studio, or other local LLM servers
+import requests
+
+class LocalLLMContextAnalyzer:
+    def __init__(self, base_url: str = "http://localhost:11434"):
+        self.base_url = base_url
+
+    async def analyze_context(self, context: PageContext) -> ContextAnalysis:
+        # Send context to local LLM for analysis
+        pass
+```
+
+### 🚀 Production Considerations
+
+#### Security
+
+- Add authentication and authorization
+- Implement rate limiting
+- Validate and sanitize all inputs
+- Use HTTPS in production
+- Implement proper CORS policies
+
+#### Scalability
+
+- Use async/await for LLM calls
+- Implement request queuing
+- Add caching for repeated analyses
+- Consider using background tasks for heavy processing
+
+#### Monitoring
+
+- Log all context analysis requests
+- Monitor LLM API usage and costs
+- Track instruction execution success rates
+- Add performance metrics
+
+#### Error Handling
+
+- Graceful fallbacks when LLM is unavailable
+- Retry logic for failed API calls
+- User-friendly error messages
+- Fallback to rule-based analysis if needed
+
 ## Next Steps
 
+- **Replace demo analyzer** with LLM integration (see above)
 - Integrate with your AI agent framework (LangChain, MCP, etc.)
 - Add authentication and authorization
 - Implement custom context extraction logic
 - Deploy to production with proper security measures
 - Add monitoring and logging
+- Fine-tune LLM prompts for your specific use case
+- Train custom models for domain-specific analysis

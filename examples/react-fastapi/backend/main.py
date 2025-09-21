@@ -7,12 +7,10 @@ from connected frontend applications.
 """
 
 import asyncio
-import base64
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 # Import Context Bridge backend SDK
@@ -21,12 +19,8 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../../backend/src"))
 
-from context_bridge import (
-    RESTContextProvider,
-    ContextProviderConfig,
-    PageContext,
-    ScreenshotOptions,
-)
+from context_bridge.context_analyzer import ContextAnalyzer
+from context_bridge.types import PageContext, DOMData, ViewportData, FormData, InputData
 
 app = FastAPI(
     title="Context Bridge Example API",
@@ -49,6 +43,130 @@ app.add_middleware(
 # In-memory storage for demonstration
 context_storage: Dict[str, PageContext] = {}
 screenshot_storage: Dict[str, str] = {}
+context_history: Dict[str, List[PageContext]] = {}  # Store context history per session
+
+# Initialize context analyzer
+# ⚠️ DEMO: This uses a rule-based analyzer. Replace with LLM integration for production.
+context_analyzer = ContextAnalyzer()
+
+
+def convert_dict_to_page_context(data: Dict[str, Any]) -> PageContext:
+    """Convert dictionary data to PageContext object"""
+    # Convert DOM data
+    dom_data = None
+    if data.get("dom"):
+        dom_dict = data["dom"]
+        forms = []
+        if dom_dict.get("forms"):
+            for form_dict in dom_dict["forms"]:
+                fields = []
+                if form_dict.get("fields"):
+                    for field_dict in form_dict["fields"]:
+                        fields.append(
+                            InputData(
+                                id=field_dict.get("id"),
+                                name=field_dict.get("name"),
+                                type=field_dict.get("type", "text"),
+                                value=field_dict.get("value"),
+                                placeholder=field_dict.get("placeholder"),
+                                required=field_dict.get("required", False),
+                            )
+                        )
+                forms.append(
+                    FormData(
+                        id=form_dict.get("id"),
+                        name=form_dict.get("name"),
+                        action=form_dict.get("action"),
+                        method=form_dict.get("method"),
+                        fields=fields,
+                    )
+                )
+
+        inputs = []
+        if dom_dict.get("inputs"):
+            for input_dict in dom_dict["inputs"]:
+                inputs.append(
+                    InputData(
+                        id=input_dict.get("id"),
+                        name=input_dict.get("name"),
+                        type=input_dict.get("type", "text"),
+                        value=input_dict.get("value"),
+                        placeholder=input_dict.get("placeholder"),
+                        required=input_dict.get("required", False),
+                    )
+                )
+
+        dom_data = DOMData(
+            text=dom_dict.get("text", ""),
+            html=dom_dict.get("html"),
+            forms=forms,
+            inputs=inputs,
+        )
+
+    # Convert viewport data
+    viewport_data = None
+    if data.get("viewport"):
+        viewport_dict = data["viewport"]
+        viewport_data = ViewportData(
+            width=viewport_dict.get("width", 0),
+            height=viewport_dict.get("height", 0),
+            scroll_x=viewport_dict.get("scrollX", 0),
+            scroll_y=viewport_dict.get("scrollY", 0),
+        )
+
+    return PageContext(
+        url=data.get("url", ""),
+        title=data.get("title", ""),
+        timestamp=data.get("timestamp", int(asyncio.get_event_loop().time() * 1000)),
+        dom=dom_data,
+        viewport=viewport_data,
+        metadata=data.get("metadata", {}),
+    )
+
+
+async def analyze_and_send_instructions(
+    websocket: WebSocket, context: PageContext, session_id: str
+):
+    """Analyze context and send instructions to frontend"""
+    try:
+        # Analyze the context
+        analysis = context_analyzer.analyze_context(context)
+        print(
+            f"📊 Context analysis: {analysis.pageType} (confidence: {analysis.confidence:.2f})"
+        )
+
+        # Generate instructions based on analysis
+        instructions = context_analyzer.generate_instructions(context, analysis)
+
+        if instructions:
+            print(f"🎯 Generated {len(instructions)} instructions")
+
+            # Send instructions to frontend
+            for instruction in instructions:
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "instruction",
+                            "data": instruction,
+                            "timestamp": int(asyncio.get_event_loop().time() * 1000),
+                        }
+                    )
+                )
+
+                # Small delay between instructions
+                await asyncio.sleep(0.1)
+
+        # Store context in history for behavior analysis
+        if session_id not in context_history:
+            context_history[session_id] = []
+        context_history[session_id].append(context)
+
+        # Keep only last 10 contexts per session
+        if len(context_history[session_id]) > 10:
+            context_history[session_id] = context_history[session_id][-10:]
+
+    except Exception as e:
+        print(f"❌ Error analyzing context: {e}")
 
 
 # Pydantic models for API
@@ -259,17 +377,18 @@ async def agent_get_context_with_screenshot(url: Optional[str] = None):
 async def websocket_endpoint(websocket: WebSocket):
     """
     WebSocket endpoint for real-time context updates
-    This handles the WebSocket provider implementation
+    This handles the WebSocket provider implementation with intelligent instruction generation
     """
     await websocket.accept()
-    print(f"WebSocket client connected: {websocket.client}")
+    client_id = f"client_{id(websocket)}"
+    print(f"WebSocket client connected: {websocket.client} (ID: {client_id})")
 
     try:
         while True:
             # Wait for messages from client
             data = await websocket.receive_text()
             message = json.loads(data)
-            print(f"Received WebSocket message: {message}")
+            print(f"Received WebSocket message: {message.get('type', 'unknown')}")
 
             # Handle different message types
             if message.get("type") == "auth":
@@ -284,16 +403,63 @@ async def websocket_endpoint(websocket: WebSocket):
                     )
                 )
             elif message.get("type") == "context":
-                # Handle context updates
-                await websocket.send_text(
-                    json.dumps(
-                        {
-                            "type": "context_received",
-                            "status": "success",
-                            "timestamp": int(asyncio.get_event_loop().time() * 1000),
-                        }
+                # Handle context updates with intelligent analysis
+                context_data = message.get("data", {})
+
+                # Convert to PageContext object
+                try:
+                    context = convert_dict_to_page_context(context_data)
+
+                    # Store context
+                    context_storage[context.url] = context
+                    context_storage["default"] = context
+
+                    print(f"📥 Received context: {context.title} at {context.url}")
+
+                    # Analyze context and send instructions
+                    await analyze_and_send_instructions(websocket, context, client_id)
+
+                    # Send acknowledgment
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "type": "context_received",
+                                "status": "success",
+                                "timestamp": int(
+                                    asyncio.get_event_loop().time() * 1000
+                                ),
+                            }
+                        )
                     )
-                )
+                except Exception as e:
+                    print(f"❌ Error processing context: {e}")
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "type": "context_error",
+                                "status": "error",
+                                "message": str(e),
+                                "timestamp": int(
+                                    asyncio.get_event_loop().time() * 1000
+                                ),
+                            }
+                        )
+                    )
+
+            elif message.get("type") == "context_change":
+                # Handle context change events with analysis
+                context_data = message.get("data", {})
+
+                try:
+                    context = convert_dict_to_page_context(context_data)
+                    print(f"🔄 Context changed: {context.title}")
+
+                    # Analyze and send instructions for context changes
+                    await analyze_and_send_instructions(websocket, context, client_id)
+
+                except Exception as e:
+                    print(f"❌ Error processing context change: {e}")
+
             elif message.get("type") == "screenshot":
                 # Handle screenshot data from frontend
                 screenshot_data = message.get("data", {}).get("screenshot")
@@ -306,9 +472,6 @@ async def websocket_endpoint(websocket: WebSocket):
 
                     print(
                         f"📸 Received screenshot via WebSocket: {url} ({len(screenshot_data)} chars)"
-                    )
-                    print(
-                        f"🗄️  Stored screenshot with keys: {list(screenshot_storage.keys())}"
                     )
 
                     # Send acknowledgment
@@ -325,6 +488,22 @@ async def websocket_endpoint(websocket: WebSocket):
                             }
                         )
                     )
+            elif message.get("type") == "instruction_result":
+                # Handle instruction execution results from frontend
+                result_data = message.get("data", {})
+                instruction_id = result_data.get("instructionId")
+                success = result_data.get("success", False)
+
+                if success:
+                    print(f"✅ Instruction {instruction_id} executed successfully")
+                else:
+                    error = result_data.get("error", "Unknown error")
+                    print(f"❌ Instruction {instruction_id} failed: {error}")
+
+            elif message.get("type") == "pong":
+                # Handle pong response
+                print("🏓 Received pong")
+
             else:
                 # Echo back for other message types
                 await websocket.send_text(
@@ -338,7 +517,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 )
 
     except WebSocketDisconnect:
-        print("WebSocket client disconnected")
+        print(f"WebSocket client disconnected: {client_id}")
+        # Clean up client-specific data
+        if client_id in context_history:
+            del context_history[client_id]
     except Exception as e:
         print(f"WebSocket error: {e}")
         try:
@@ -350,4 +532,4 @@ async def websocket_endpoint(websocket: WebSocket):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

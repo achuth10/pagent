@@ -163,6 +163,100 @@ button:focus-visible {
   background-color: #fbbf24;
 }
 
+/* Instructions display styles */
+.instructions-list {
+  margin: 1em 0;
+}
+
+.instruction-item {
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 1em;
+  margin: 0.5em 0;
+  border-left: 4px solid #646cff;
+}
+
+.instruction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5em;
+  font-size: 0.9em;
+}
+
+.instruction-type {
+  background: #646cff;
+  color: white;
+  padding: 0.2em 0.5em;
+  border-radius: 4px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.instruction-priority {
+  background: #444;
+  color: white;
+  padding: 0.2em 0.5em;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+.instruction-time {
+  color: #999;
+  font-size: 0.8em;
+}
+
+.instruction-details {
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.instruction-form_assistance {
+  border-left-color: #f59e0b;
+}
+
+.instruction-contextual_notification {
+  border-left-color: #10b981;
+}
+
+.instruction-content_instruction {
+  border-left-color: #8b5cf6;
+}
+
+.instruction-navigation_suggestion {
+  border-left-color: #06b6d4;
+}
+
+/* Instruction types section */
+.instruction-types-section {
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.instruction-types-section h4 {
+  margin: 0 0 0.5rem 0;
+  color: #646cff;
+  font-size: 16px;
+}
+
+.instruction-types-list {
+  font-size: 14px;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.instruction-types-list li {
+  margin: 0.3rem 0;
+  line-height: 1.4;
+}
+
+.instruction-types-list strong {
+  color: #646cff;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -203,5 +297,28 @@ button:focus-visible {
     background: #ffffff;
     color: #213547;
     border: 1px solid #ccc;
+  }
+  .instruction-item {
+    background: #f5f5f5;
+    color: #213547;
+  }
+  .instruction-type {
+    background: #747bff;
+  }
+  .instruction-priority {
+    background: #666;
+  }
+  .instruction-time {
+    color: #666;
+  }
+  .instruction-types-section {
+    background: rgba(116, 123, 255, 0.1);
+    border: 1px solid rgba(116, 123, 255, 0.3);
+  }
+  .instruction-types-section h4 {
+    color: #747bff;
+  }
+  .instruction-types-list strong {
+    color: #747bff;
   }
 }

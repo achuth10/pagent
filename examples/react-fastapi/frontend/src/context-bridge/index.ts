@@ -23,6 +23,7 @@ export type {
   ContextResponse,
   FormData,
   InputData,
+  Instruction,
 } from "../../../../../core/types";
 
 // Factory function

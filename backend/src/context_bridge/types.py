@@ -2,9 +2,8 @@
 Type definitions for Context Bridge backend
 """
 
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
-from datetime import datetime
 
 
 @dataclass
@@ -90,3 +89,58 @@ class ContextResponse:
 
     context: PageContext
     screenshot: Optional[str] = None  # base64 encoded
+
+
+@dataclass
+class ContextAnalysisIssue:
+    """Issue identified in context analysis"""
+
+    type: str  # validation, usability, accessibility, performance
+    severity: str  # low, medium, high
+    message: str
+    element: Optional[str] = None
+
+
+@dataclass
+class ContextAnalysisSuggestion:
+    """Suggestion from context analysis"""
+
+    type: str  # improvement, next_step, alternative
+    message: str
+    action: Optional[str] = None
+
+
+@dataclass
+class ContextAnalysis:
+    """Result of context analysis"""
+
+    pageType: str  # form, checkout, dashboard, content, error, loading, unknown
+    userIntent: Optional[str] = (
+        None  # browsing, purchasing, form_filling, searching, reading
+    )
+    issues: List[ContextAnalysisIssue] = field(default_factory=list)
+    suggestions: List[ContextAnalysisSuggestion] = field(default_factory=list)
+    confidence: float = 0.0  # 0-1
+
+
+# Instruction types for backend-to-frontend communication
+# Using Dict[str, Any] for simplicity to match the existing implementation
+InstructionDict = Dict[str, Any]
+
+
+@dataclass
+class WebSocketMessage:
+    """WebSocket message types"""
+
+    type: str
+    data: Optional[Any] = None
+    timestamp: int = 0
+    id: Optional[str] = None
+
+
+@dataclass
+class InstructionMessage(WebSocketMessage):
+    """Instruction message from backend to frontend"""
+
+    type: str = "instruction"
+    data: Optional[Dict[str, Any]] = None

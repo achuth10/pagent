@@ -4,8 +4,15 @@ import {
   ScreenshotOptions,
   ContextProviderConfig,
   ContextResponse,
+  Instruction,
+  InstructionMessage,
+  WebSocketMessage,
 } from "../../../core/types";
 import { ContextExtractor } from "../utils/context-extractor";
+import {
+  InstructionExecutor,
+  InstructionExecutorConfig,
+} from "../utils/instruction-executor";
 import html2canvas from "html2canvas";
 
 /**
@@ -20,8 +27,13 @@ export class WSContextProvider implements EventContextProvider {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
+  private instructionExecutor: InstructionExecutor;
+  private instructionCallbacks: Array<(instruction: Instruction) => void> = [];
 
-  constructor(config: ContextProviderConfig = {}) {
+  constructor(
+    config: ContextProviderConfig = {},
+    instructionConfig?: InstructionExecutorConfig
+  ) {
     this.config = {
       baseUrl: config.baseUrl || "ws://localhost:8000",
       authHeaders: config.authHeaders || {},
@@ -29,6 +41,31 @@ export class WSContextProvider implements EventContextProvider {
       enableScreenshots: config.enableScreenshots ?? false,
       screenshotOptions: config.screenshotOptions || {},
     };
+
+    // Initialize instruction executor
+    this.instructionExecutor = new InstructionExecutor({
+      enableNotifications: true,
+      enableRedirects: true,
+      enableFormManipulation: true,
+      enableDOMManipulation: true,
+      onInstructionExecuted: (instruction, result) => {
+        console.log(`✅ Instruction executed: ${instruction.type}`, result);
+        this.sendMessage("instruction_result", {
+          instructionId: instruction.id,
+          success: true,
+          result,
+        });
+      },
+      onInstructionFailed: (instruction, error) => {
+        console.error(`❌ Instruction failed: ${instruction.type}`, error);
+        this.sendMessage("instruction_result", {
+          instructionId: instruction.id,
+          success: false,
+          error,
+        });
+      },
+      ...instructionConfig,
+    });
 
     this.connect();
   }
@@ -210,6 +247,27 @@ export class WSContextProvider implements EventContextProvider {
   }
 
   /**
+   * Subscribe to instruction events
+   */
+  onInstruction(callback: (instruction: Instruction) => void): () => void {
+    this.instructionCallbacks.push(callback);
+
+    return () => {
+      const index = this.instructionCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.instructionCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * Get the instruction executor instance for advanced usage
+   */
+  getInstructionExecutor(): InstructionExecutor {
+    return this.instructionExecutor;
+  }
+
+  /**
    * Start monitoring for context changes
    */
   startMonitoring(): void {
@@ -332,7 +390,7 @@ export class WSContextProvider implements EventContextProvider {
   /**
    * Handle incoming WebSocket messages
    */
-  private handleMessage(message: any): void {
+  private handleMessage(message: WebSocketMessage): void {
     switch (message.type) {
       case "ping":
         this.sendMessage("pong", {});
@@ -342,9 +400,66 @@ export class WSContextProvider implements EventContextProvider {
           this.sendMessage("context_response", context);
         });
         break;
-      default:
-        // Handle other message types as needed
+      case "instruction":
+        this.handleInstructionMessage(message as InstructionMessage);
         break;
+      case "batch_instructions":
+        this.handleBatchInstructions(message.data);
+        break;
+      default:
+        console.log(`Received unknown message type: ${message.type}`, message);
+        break;
+    }
+  }
+
+  /**
+   * Handle instruction message from backend
+   */
+  private async handleInstructionMessage(
+    message: InstructionMessage
+  ): Promise<void> {
+    const instruction = message.data;
+    console.log(
+      `📨 Received instruction from backend: ${instruction.type}`,
+      instruction
+    );
+
+    // Notify instruction callbacks
+    this.instructionCallbacks.forEach((callback) => {
+      try {
+        callback(instruction);
+      } catch (error) {
+        console.error("Error in instruction callback:", error);
+      }
+    });
+
+    // Execute the instruction
+    try {
+      await this.instructionExecutor.executeInstruction(instruction);
+    } catch (error) {
+      console.error("Failed to execute instruction:", error);
+    }
+  }
+
+  /**
+   * Handle batch instructions from backend
+   */
+  private async handleBatchInstructions(
+    instructions: Instruction[]
+  ): Promise<void> {
+    console.log(`📨 Received ${instructions.length} instructions from backend`);
+
+    for (const instruction of instructions) {
+      try {
+        await this.instructionExecutor.executeInstruction(instruction);
+        // Small delay between instructions to avoid overwhelming the UI
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(
+          `Failed to execute instruction ${instruction.id}:`,
+          error
+        );
+      }
     }
   }
 
@@ -367,5 +482,9 @@ export class WSContextProvider implements EventContextProvider {
     }
 
     this.contextChangeCallbacks = [];
+    this.instructionCallbacks = [];
+
+    // Cleanup instruction executor
+    this.instructionExecutor.cleanup();
   }
 }
