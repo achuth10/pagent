@@ -4,7 +4,7 @@ A unified library that enables **bidirectional communication** between web appli
 
 > Beyond just context extraction, this library enables backends to analyze page context and send intelligent instructions back to the frontend for automatic execution, creating truly interactive AI-powered web experiences.
 
-This is a purely vibe code project, I will get around to cleaning and reviewing this at some point.
+This is a purely vibe coded project, I will get around to cleaning and reviewing this at some point.
 
 ## 🚀 Key Features
 
